@@ -1,0 +1,17 @@
+{
+  "name": "remote-teacher-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node socket-server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chrome-remote-interface": "^0.31.1",
+    "nodejs-websocket": "^1.7.2",
+    "silly-datetime": "^0.1.2"
+  }
+}
