@@ -5,7 +5,7 @@ const { Warnning } = require('./utils');
 (async () => {
 
     const inputQueue = [];
-    const fps = process.argv[3] || 20;
+    const fps = 20;
     let sid = -1;
 
     let firstFrameComplete = false;
