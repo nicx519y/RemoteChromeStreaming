@@ -22,6 +22,7 @@ Mpeg1Muxer = function(options) {
   }
   this.spawnOptions = [
     '-re',
+    '-threads', '4',                        //工作线程数
     '-f','image2pipe',                         
     '-avioflags','direct',                  //无缓冲
     '-fpsprobesize',0,
@@ -32,12 +33,14 @@ Mpeg1Muxer = function(options) {
     '-f','mpegts',
     '-fflags', 'nobuffer',                  //无缓冲
     '-codec:v','mpeg1video',                //编码格式
+    // '-codec:v', 'libx264',
     '-vf', 'crop=iw-mod(iw\\,2):ih-mod(ih\\,2)',
     '-b:v','800k',                          //视频码率
     '-bf','0',                              //设置非B帧之间的B帧个数
-    '-g','45',                               //gop cache
+    '-g','20',                               //gop cache
     '-sc_threshold','0',                    //禁用场景识别
     ...this.additionalFlags,
+    // '-f', 'flv',
     '-threads', '4',                        //工作线程数
     'pipe:1'                                //标准输出管道
   ];

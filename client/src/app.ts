@@ -1,5 +1,6 @@
 import './css/index.css';
 import JSMpeg from '@cycjimmy/jsmpeg-player';
+import flvjs from 'flv.js';
 
 const Config = {
     'SOCKET_URL': 'ws://localhost:8000',
@@ -14,6 +15,7 @@ export class Main {
 
     private _container: HTMLDivElement;
     private _canvas: HTMLCanvasElement;
+    // private _canvas: HTMLVideoElement;
     // private _profile: HTMLDivElement;
     private _toolsContainer: HTMLDivElement;
     private _backwardBtn: HTMLButtonElement;
@@ -24,6 +26,7 @@ export class Main {
     constructor() {
         this._container = document.createElement('div');
         this._canvas = document.createElement('canvas');
+        // this._canvas = document.createElement('video');
         // this._profile = document.createElement('div');
         this._toolsContainer = document.createElement('div');
         this._backwardBtn = document.createElement('button');
@@ -75,7 +78,21 @@ export class Main {
             audio: false,
             video: true,
         });
-        // this._player.play();
+        this._player.play();
+
+        // const player = flvjs.createPlayer({
+        //     type: 'flv',
+        //     isLive: true,
+        //     hasAudio: false,
+        //     hasVideo: true,
+        //     url: wsUrl,
+        // }, {
+        //     // enableWorker: true,
+        //     autoCleanupSourceBuffer: true,
+        //     enableStashBuffer: false,
+        // });
+        // player.attachMediaElement(this._canvas);
+        // player.load();
     }
 
     private _setCanvasSize(width, height) {

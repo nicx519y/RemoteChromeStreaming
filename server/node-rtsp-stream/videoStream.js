@@ -127,7 +127,6 @@ VideoStream.prototype.onSocketConnect = function(socket, request) {
   socket.send(streamHeader, {
     binary: true
   })
-  // socket.sendBinary(streamHeader);
   console.log(`${this.name}: New WebSocket Connection (` + this.wsServer.clients.size + " total)")
 
   socket.remoteAddress = request.connection.remoteAddress
