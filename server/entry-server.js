@@ -1,11 +1,14 @@
 const ws = require('nodejs-websocket');
+const RtspStream = require('./node-rtsp-stream');
 const spawn = require('child_process').spawn;
 const { CliParse, CliCreate, Log, Warnning } = require('./utils');
 
 const Config = {
     WINDOW_WIDTH: 1280,
     WINDOW_HEIGHT: 720,
-    FRAME_CACHE_MAX: 10 * 1024 * 1024,
+    COMMAND_WS_PORT: 8000,
+    VIDEO_WS_PORT: 9999,
+    VIDEO_FPS: 24,
     // PAGE_URL: 'http://naiteluo.cc/mondrian/index.html',
     PAGE_URL: 'https://weui.io/',
     // PAGE_URL: 'https://www.iqiyi.com/'
@@ -13,17 +16,11 @@ const Config = {
 
 class EntryServer {
 
-    port = 8000;
     ws;
     cdp;
     isReady = false;
     
-    frameCache = Buffer.allocUnsafe(Config.FRAME_CACHE_MAX);
-    frameCacheLength = 0;
-    frameCacheWriteBegin = false;
-
-    constructor(port) {
-        this.port = port || 8000;
+    constructor() {
     }
 
     async run() {
@@ -31,7 +28,7 @@ class EntryServer {
             this.ws = this._createSocketServer();
             await this._createBrowserProcess();
             this.cdp = await this._createCDPProcess();
-            this.cdp.stdout.on('data', this._reciveDataHandler);
+            this._createRtsp(this.cdp.stdout);
             this.isReady = true;
         }
         catch(e) {
@@ -73,12 +70,12 @@ class EntryServer {
             });
         });
         server.on('connection', conn => this._connect(conn));
-        server.listen(this.port);
+        server.listen(Config.COMMAND_WS_PORT);
         return server;
     }
 
     _createCDPProcess() {
-        const worker = spawn('node', ['./cdp.js', Config.PAGE_URL], {
+        const worker = spawn('node', ['./cdp.js', Config.PAGE_URL, Config.VIDEO_FPS], {
             stdio: [ 'pipe', 'pipe', 'inherit' ]
         });
         worker.on('exit', code => Log(`CDP process exit, code: ${code}.`));
@@ -86,25 +83,18 @@ class EntryServer {
         return worker;
     }
 
-    _reciveDataHandler = data => {
-
-        const isStart = data.slice(0, 3).toString() == 'SOL';
-        const isEnd = data.slice(-3).toString() == 'EOL';
-        let buffer;
-
-        if(isStart && !isEnd) {
-            buffer = data.slice(3);
-        } else if(!isStart && isEnd) {
-            buffer = data.slice(0, -3);
-        } else if(isStart && isEnd) {
-            buffer = data.slice(3, -3);
-        } else {    // !isStart && !isEnd
-            buffer = data;
-        }
-
-        this._lastFrameCache(isStart, isEnd, buffer);
-        this._frameDataCast(isStart, isEnd, buffer);
-        
+    _createRtsp(input) {
+        const rtsp = new RtspStream({
+            name: 'rtsp',
+            ffmpegPath: 'ffmpeg',
+            inputStream: input,
+            wsPort: Config.VIDEO_WS_PORT,
+            ffmpegOptions: {
+                '-s': `${Config.WINDOW_WIDTH}x${Config.WINDOW_HEIGHT}`,      //设置分辨率
+                '-r': `${Config.VIDEO_FPS}`,
+            }
+        });
+        return rtsp;
     }
 
     _messageHandler = text => {
@@ -127,36 +117,6 @@ class EntryServer {
 
     _disconnect(conn) {
         Log('websocket disconnect.');
-    }
-
-    _lastFrameCache(isStart, isEnd, buffer) {
-        if(isStart) {
-            this.frameCacheWriteBegin = true;
-            this.frameCacheLength = 0;
-        }
-
-        if(this.frameCacheWriteBegin) {
-            this.frameCache.fill(buffer, this.frameCacheLength, this.frameCacheLength + buffer.length);
-            this.frameCacheLength += buffer.length;
-        }
-
-        if(isEnd) {
-            this.frameCacheWriteBegin = false;
-        }
-    }
-
-    _frameDataCast(isStart, isEnd, buffer) {
-        this.ws.connections.forEach(conn => {
-            if(isStart && !conn.outStream) {
-                conn.beginBinary();
-            }
-            if(conn.outStream) {
-                conn.outStream.write(buffer);
-                if(isEnd) {
-                    conn.outStream.end();
-                }
-            }
-        });
     }
 }
 

@@ -1,21 +1,13 @@
 const CDP = require('chrome-remote-interface');
-const { Log, Warnning, CliParse } = require('./utils');
-
-function framePackage(data, metadata) {
-    // Warnning(`recive length: ${data.length}, time: ${metadata.timestamp * 1000} ms, ${metadata.offsetTop}, ${metadata.pageScaleFactor}, ${metadata.deviceWidth}, ${metadata.deviceHeight}, ${metadata.scrollOffsetX}, ${metadata.scrollOffsetY}`)
-
-    let buf = Buffer.allocUnsafe(14 + data.length);
-    buf.writeUIntLE(Math.round(metadata.timestamp * 1000), 0, 6);   //timestamp
-    buf.writeUInt32LE(Math.round(data.length), 6);           //length
-    buf.writeUInt16LE(Math.round(metadata.deviceWidth), 10);        //width
-    buf.writeUInt16LE(Math.round(metadata.deviceHeight), 12);       //height
-    buf.write(data, 14);                                            //data
-    return new Uint8Array(buf, 0, 14 + data.length);                          
-}
+const ImageStreaming = require('./image-stream');
+const { Warnning } = require('./utils');
 
 (async () => {
 
     const inputQueue = [];
+    const fps = process.argv[3] || 20;
+    let sid = -1;
+
     let firstFrameComplete = false;
 
     const { Network, Page, Input ,Target } = client = await init();
@@ -31,36 +23,31 @@ function framePackage(data, metadata) {
 
     Warnning(`page loaded & will start screencast`);
 
-    // Page.on('screencastFrame', frame => {
-    //     const { data, metadata, sessionId } = frame;
-    //     Warnning(`sessionId: ${sessionId}`);
-    //     // if(!firstFrameComplete) { 
-    //     // Page.screencastFrameAck({ sessionId: sessionId });
-    //     //     firstFrameComplete = true;
-    //     // } 
-    //     process.stdout.write('SOL');
-    //     process.stdout.write(framePackage(data, metadata));
-    //     process.stdout.write('EOL');
-    // });
+    const imageStreaming = new ImageStreaming(process.stdout, fps);
 
-    (async function() {
-        while(true) {
-            const { data, metadata, sessionId } = await Page.screencastFrame();
-            Warnning(`cdp recive frame delay: ${ Math.round(Date.now() - metadata.timestamp * 1000) } mss`);
-            await Page.screencastFrameAck({ sessionId });
-            process.stdout.write('SOL');
-            process.stdout.write(framePackage(data, metadata));
-            process.stdout.write('EOL');
-        }
-    })();
+    // (async function() {
+    //     while(true) {
+    //         const { data, metadata, sessionId } = await Page.screencastFrame();
+    //         sid = sessionId;
+    //         // Warnning(`cdp recive frame delay: ${ Math.round(Date.now() - metadata.timestamp * 1000) } mss`);
+    //         // await Page.screencastFrameAck({ sessionId });
+    //         imageStreaming.pushFrame(data);
+    //     }
+    // })();
+
+    Page.on('screencastFrame', client => {
+        const { data, metadata, sessionId } = client;
+        sid = sessionId;
+        imageStreaming.pushFrame(data);
+    })
 
     await Page.startScreencast({
         format: 'jpeg',
-        quality: 40,
+        quality: 80,
         everyNthFrame: 1,
     });
 
-    // setInterval(() => Page.screencastFrameAck({ sessionId: 1 }), 30);
+    setInterval(() => (sid > 0) && Page.screencastFrameAck({ sessionId: sid }), 1000/fps);
 
     // consume input
     (async function() {
@@ -92,7 +79,7 @@ function framePackage(data, metadata) {
             .then(b => b)
             .catch(e => new Promise(resolve => setTimeout(() => resolve(arguments.callee()), 500)));
     }
-    
+
     function mouseAction(type, x, y) {
         type = { down: 'mousePressed', up: 'mouseReleased', move: 'mouseMoved' }[type];
         x *= 1;

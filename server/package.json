@@ -12,6 +12,7 @@
   "devDependencies": {
     "chrome-remote-interface": "^0.31.1",
     "nodejs-websocket": "^1.7.2",
-    "silly-datetime": "^0.1.2"
+    "silly-datetime": "^0.1.2",
+    "ws": "^7.0.0"
   }
 }
