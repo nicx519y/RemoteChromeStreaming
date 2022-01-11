@@ -6,8 +6,8 @@ const { CliParse, CliCreate, Log, Warnning } = require('./utils');
 const Config = {
     WINDOW_WIDTH: 1280,
     WINDOW_HEIGHT: 720,
-    COMMAND_WS_PORT: 8000,
-    VIDEO_WS_PORT: 9999,
+    COMMAND_WS_PORT: 3100,
+    VIDEO_WS_PORT: 3101,
     VIDEO_FPS: 30,
     // PAGE_URL: 'chrome://gpu',
     // PAGE_URL: 'http://naiteluo.cc/mondrian/index.html',

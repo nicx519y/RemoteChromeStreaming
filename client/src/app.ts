@@ -3,8 +3,8 @@ import JSMpeg from '@cycjimmy/jsmpeg-player';
 import flvjs from 'flv.js';
 
 const Config = {
-    'SOCKET_URL': 'ws://localhost:8000',
-    'VIDEO_URL': 'ws://localhost:9999',
+    'SOCKET_URL': `ws://${window.location.hostname}:3100`,
+    'VIDEO_URL': `ws://${window.location.hostname}:3101`,
     'PLAYER_WIDTH': 1280,
     'PLAYER_HEIGHT': 720,
 }
