@@ -5,10 +5,7 @@ const { Warnning } = require('./utils');
 (async () => {
 
     const inputQueue = [];
-    const fps = 20;
-    let sid = -1;
-
-    let firstFrameComplete = false;
+    const fps = 24;
 
     const { Network, Page, Input ,Target } = client = await init();
     await Promise.all([Network.enable(), Page.enable() ]);
@@ -25,21 +22,19 @@ const { Warnning } = require('./utils');
 
     const imageStreaming = new ImageStreaming(process.stdout, fps);
 
-    // (async function() {
-    //     while(true) {
-    //         const { data, metadata, sessionId } = await Page.screencastFrame();
-    //         sid = sessionId;
-    //         // Warnning(`cdp recive frame delay: ${ Math.round(Date.now() - metadata.timestamp * 1000) } mss`);
-    //         // await Page.screencastFrameAck({ sessionId });
-    //         imageStreaming.pushFrame(data);
-    //     }
-    // })();
-
     Page.on('screencastFrame', client => {
         const { data, metadata, sessionId } = client;
-        sid = sessionId;
         imageStreaming.pushFrame(data);
-    })
+        Page.screencastFrameAck({ sessionId });
+    });
+
+    Page.on('screencastVisibilityChanged', evt => {
+        if(evt.visible == false) {
+            Warnning(`Page with currently enabled screencast  was hidden.`);
+        } else {
+            Warnning(`Page with currently enabled screencast  was shown.`);
+        }
+    });
 
     await Page.startScreencast({
         format: 'jpeg',
@@ -47,18 +42,16 @@ const { Warnning } = require('./utils');
         everyNthFrame: 1,
     });
 
-    setInterval(() => (sid > 0) && Page.screencastFrameAck({ sessionId: sid }), 1000/fps);
-
     // consume input
-    (async function() {
-        while(true) {
-            if(inputQueue.length > 0) {
-                inputDispatch(inputQueue.shift());
-            } else {
-                await new Promise(resolve => setTimeout(() => resolve(), 1));
-            }
-        }
-    })();
+    // (async function() {
+    //     while(true) {
+    //         if(inputQueue.length > 0) {
+    //             inputDispatch(inputQueue.shift());
+    //         } else {
+    //             await new Promise(resolve => setTimeout(() => resolve(), 1));
+    //         }
+    //     }
+    // })();
 
     process.stdin.on('data', data => {
         try {
@@ -67,7 +60,8 @@ const { Warnning } = require('./utils');
                 .split('\n')
                 .filter(v => v != '')
                 .map(v => JSON.parse(v))
-                .forEach(o => inputQueue.push(o));
+                // .forEach(o => inputQueue.push(o));
+                .forEach(o => inputDispatch(o));
             }
         catch(e) {
             Warnning(`parse input data failure: ${e}`);

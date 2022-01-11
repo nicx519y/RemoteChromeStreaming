@@ -9,6 +9,7 @@ const Config = {
     COMMAND_WS_PORT: 8000,
     VIDEO_WS_PORT: 9999,
     VIDEO_FPS: 30,
+    // PAGE_URL: 'chrome://gpu',
     // PAGE_URL: 'http://naiteluo.cc/mondrian/index.html',
     PAGE_URL: 'https://weui.io/',
     // PAGE_URL: 'https://www.iqiyi.com/'
@@ -48,7 +49,6 @@ class EntryServer {
                 '--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4',
                 '--use-gl=egl',
                 // '--disable-gpu',
-                '--use-skia-renderer',
             ], {
                 stdio: 'pipe',
                 shell: false,
